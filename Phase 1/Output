@@ -1,0 +1,101 @@
+=== Test 1: Total patterns loaded ===
+ total_patterns 
+----------------
+             20
+(1 row)
+
+
+=== Test 2: Breakdown by type ===
+ pattern_type | count 
+--------------+-------
+ exact_url    |     5
+ domain       |     5
+ keyword      |     7
+ regex        |     3
+(4 rows)
+
+
+=== Test 3: Breakdown by severity ===
+ severity | label  | count 
+----------+--------+-------
+        1 | low    |     1
+        2 | medium |     7
+        3 | high   |    12
+(3 rows)
+
+
+=== Test 4: Simulate exact URL check ===
+ id |              pattern               | severity |                   description                   
+----+------------------------------------+----------+-------------------------------------------------
+  1 | http://mysingpass-verify.com/login |        3 | Fake Singpass login page harvesting credentials
+(1 row)
+
+
+=== Test 5: Simulate domain check ===
+ id |    pattern    | severity |                  description                   
+----+---------------+----------+------------------------------------------------
+  7 | dbs-alert.net |        3 | Impersonates DBS Bank — not an official domain
+(1 row)
+
+
+=== Test 6: Simulate keyword scan ===
+ id |                         pattern                         | severity 
+----+---------------------------------------------------------+----------
+ 11 | Your account has been suspended. Click here immediately |        3
+(1 row)
+
+
+=== Test 7: Insert a sample user report ===
+ id |               submitted_text                | status  |          created_at           
+----+---------------------------------------------+---------+-------------------------------
+  1 | http://ocbc-secure-login.com/reset-password | pending | 2026-05-29 17:44:44.331876+08
+(1 row)
+
+INSERT 0 1
+
+=== Test 8: Confirm report is pending review ===
+ id |               submitted_text                | status  | reason_impersonation | reason_urgency 
+----+---------------------------------------------+---------+----------------------+----------------
+  1 | http://ocbc-secure-login.com/reset-password | pending | t                    | t
+(1 row)
+
+
+=== Test 9: Simulate admin approving report ===
+ id |                   pattern                   |    source     
+----+---------------------------------------------+---------------
+ 21 | http://ocbc-secure-login.com/reset-password | user_approved
+(1 row)
+
+INSERT 0 1
+ id |  status  | pattern_id |          reviewed_at          
+----+----------+------------+-------------------------------
+  1 | approved |         21 | 2026-05-29 17:44:44.340265+08
+(1 row)
+
+UPDATE 1
+ id |     action      |          created_at           
+----+-----------------+-------------------------------
+  1 | report_approved | 2026-05-29 17:44:44.343099+08
+(1 row)
+
+INSERT 0 1
+
+=== Test 10: Final state check ===
+-- phishing_patterns (should now be 21 rows):
+ total 
+-------
+    21
+(1 row)
+
+-- user_reports status summary:
+  status  | count 
+----------+-------
+ approved |     1
+(1 row)
+
+-- audit_log entries:
+     action      |          notes          |          created_at           
+-----------------+-------------------------+-------------------------------
+ report_approved | Approved via test query | 2026-05-29 17:44:44.343099+08
+(1 row)
+
