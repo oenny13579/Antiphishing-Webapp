@@ -1,0 +1,7 @@
+Files
+
+db/
+├── schema.sql        ← Run first — creates all tables, types, indexes
+├── seed.sql          ← Run second — loads 20 phishing patterns
+├── setup_db.sh       ← Runs both automatically
+└── test_queries.sql  ← Verifies everything works
