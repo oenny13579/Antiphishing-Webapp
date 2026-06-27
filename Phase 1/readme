@@ -1,4 +1,4 @@
-Files
+**Files**
 
 db/
 ├── schema.sql        ← Run first — creates all tables, types, indexes
@@ -28,3 +28,28 @@ bashpsql --version
 You should see something like psql (PostgreSQL) 16.x. Then:
 bashpsql postgres
 If you get a postgres=# prompt, you're in. Type \q to exit.
+
+One-time setup (do this only once)
+
+1. Install PostgreSQL
+bashbrew install postgresql@16
+
+2. Set your language settings
+bashexport LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+3. Initialise the database
+bashinitdb -U $(whoami) /opt/homebrew/var/postgresql@16
+
+4. Start PostgreSQL
+bashbrew services start postgresql@16
+
+5. Add PostgreSQL to your PATH (so psql works)
+bashecho 'export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+6. Verify PostgreSQL is running
+bashpsql postgres
+
+You should see a postgres=# prompt. Type \q to exit.
+
