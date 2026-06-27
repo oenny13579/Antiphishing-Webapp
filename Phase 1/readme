@@ -1,4 +1,4 @@
-**Files**
+*Files*
 
 db/
 ├── schema.sql        ← Run first — creates all tables, types, indexes
@@ -29,7 +29,7 @@ You should see something like psql (PostgreSQL) 16.x. Then:
 bashpsql postgres
 If you get a postgres=# prompt, you're in. Type \q to exit.
 
-One-time setup (do this only once)
+*One-time setup (do this only once)*
 
 1. Install PostgreSQL
 bashbrew install postgresql@16
@@ -52,4 +52,29 @@ source ~/.zshrc
 bashpsql postgres
 
 You should see a postgres=# prompt. Type \q to exit.
+
+**Prototype 1 — Database**
+
+Step 1 — Go to your Downloads folder
+bashcd ~/Downloads
+
+Step 2 — Create the database
+bashcreatedb antiphishing
+
+Step 3 — Run the setup script
+Open setup_db.sh and make sure DB_USER matches your Mac username
+(run whoami to check). Then run:
+bashbash setup_db.sh
+
+You should see a table showing 4 pattern types loaded
+(exact_url, domain, keyword, regex).
+
+Step 4 — Run the test queries
+bashpsql -U raphaeloen -d antiphishing -f test_queries.sql
+
+Replace raphaeloen with your own username.
+
+✅ Done when you see: "All tests complete. Prototype 1 is verified."
+
+
 
