@@ -1,4 +1,4 @@
-*Files*
+**Files**
 
 db/
 ├── schema.sql        ← Run first — creates all tables, types, indexes
@@ -29,7 +29,7 @@ You should see something like psql (PostgreSQL) 16.x. Then:
 bashpsql postgres
 If you get a postgres=# prompt, you're in. Type \q to exit.
 
-*One-time setup (do this only once)*
+**One-time setup (do this only once)**
 
 1. Install PostgreSQL
 bashbrew install postgresql@16
@@ -53,7 +53,7 @@ bashpsql postgres
 
 You should see a postgres=# prompt. Type \q to exit.
 
-<strong>Prototype 1 — Database</strong>.
+**Prototype 1 — Database**
 
 Step 1 — Go to your Downloads folder
 bashcd ~/Downloads
@@ -76,5 +76,92 @@ Replace raphaeloen with your own username.
 
 ✅ Done when you see: "All tests complete. Prototype 1 is verified."
 
+Prototype 2 — Backend
 
+Step 1 — Create a Python virtual environment
+bashcd ~/Downloads
+python3 -m venv venv
+source venv/bin/activate
+
+You should see (venv) at the start of your prompt.
+
+Step 2 — Install psycopg2 first (avoids version conflict)
+bashpip install psycopg2-binary --no-cache-dir
+
+Step 3 — Fix the requirements file and install everything else
+bashsed -i '' 's/psycopg2-binary==2.9.9/psycopg2-binary/' requirements.txt
+pip install -r requirements.txt
+
+Step 4 — Check your .env file
+The file may have been saved without the dot. Check and rename if needed:
+bashls -la | grep env
+
+If you see env instead of .env, rename it:
+bashmv env .env
+
+Then confirm the DB_USER is your Mac username:
+bashcat .env
+
+It should say DB_USER=raphaeloen (or your own username).
+If it still says postgres, fix it:
+bashsed -i '' 's/DB_USER=postgres/DB_USER=raphaeloen/' .env
+
+Step 5 — Start the backend server
+bashuvicorn main:app --reload
+
+Leave this terminal window open and running.
+
+Step 6 — Test the backend
+Open your browser and go to:
+http://127.0.0.1:8000/docs
+
+Click GET /health → Try it out → Execute.
+
+✅ Done when you see: "status": "healthy" and "patterns_loaded": 20
+
+Prototype 3 — Scanner frontend
+
+Step 1 — Open the scanner
+Double-click index.html in your Downloads folder.
+
+Step 2 — Scan a test URL
+Paste this into the text box and click Scan message:
+http://mysingpass-verify.com/login
+
+Step 3 — Try a safe message
+Hey, are we still on for lunch tomorrow?
+
+✅ Done when: phishing URL shows an amber warning card, safe message shows a green "Looks safe" card.
+
+Prototype 4 — Flagging + admin review
+
+Step 1 — Test the user flagging flow
+In index.html, after scanning a message:
+Click the "flag this" link below the verdict
+The message text is pre-filled — check off one or more reasons
+Click Submit report
+You should see "Report submitted"
+
+Step 2 — Open the admin review queue
+Double-click admin.html in your Downloads folder.
+You should see the report you just submitted in the queue.
+
+Step 3 — Approve the report
+Pick a severity (low / medium / high)
+Click Approve
+The queue should empty
+
+Step 4 — Confirm it's live
+Go back to index.html, scan the same message you flagged.
+It should now show as phishing detected.
+
+✅ Done when: flagged message is caught by the scanner after approval.
+
+(Every time you come back)
+
+Run these two commands to start everything up:
+bashbrew services start postgresql@16
+cd ~/Downloads && source venv/bin/activate && uvicorn main:app --reload
+
+Then open index.html and admin.html in your browser.
 
