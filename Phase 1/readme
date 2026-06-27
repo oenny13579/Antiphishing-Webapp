@@ -53,7 +53,7 @@ bashpsql postgres
 
 You should see a postgres=# prompt. Type \q to exit.
 
-**Prototype 1 — Database**
+<strong>Prototype 1 — Database</strong>.
 
 Step 1 — Go to your Downloads folder
 bashcd ~/Downloads
