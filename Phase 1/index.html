@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ScanLine — Phishing Check</title>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #FAF8F4;
+    --ink: #1A2332;
+    --ink-soft: #3D4856;
+    --slate: #8B95A1;
+    --slate-light: #D8D3C8;
+    --amber: #E8893A;
+    --amber-bg: #FCEEE0;
+    --sage: #5B8266;
+    --sage-bg: #E9F0E8;
+    --card-border: #E5E0D5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace; }
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+  }
+  header {
+    padding: 32px 0 24px 0;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--sage);
+    display: inline-block;
+  }
+  .status-dot.offline { background: var(--amber); }
+  h1 {
+    font-size: 26px; font-weight: 700;
+    letter-spacing: -0.02em; margin: 0; color: var(--ink);
+  }
+  .subhead { font-size: 14px; color: var(--ink-soft); margin: 8px 0 0 0; line-height: 1.5; }
+  main { flex: 1; padding: 28px 0 40px 0; }
+  .input-label {
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--slate); margin-bottom: 10px; display: block;
+  }
+  textarea {
+    width: 100%; min-height: 110px; padding: 16px;
+    border: 1.5px solid var(--card-border); border-radius: 10px;
+    background: #fff; color: var(--ink); font-size: 15px;
+    font-family: inherit; line-height: 1.5; resize: vertical;
+    transition: border-color 0.15s ease;
+  }
+  textarea:focus { outline: none; border-color: var(--ink); }
+  textarea::placeholder { color: var(--slate-light); }
+  .scan-btn {
+    width: 100%; margin-top: 14px; padding: 15px;
+    background: var(--ink); color: var(--bg); border: none;
+    border-radius: 10px; font-size: 15px; font-weight: 600;
+    letter-spacing: 0.01em; cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+  }
+  .scan-btn:hover:not(:disabled) { opacity: 0.85; }
+  .scan-btn:active:not(:disabled) { transform: scale(0.99); }
+  .scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .verdict {
+    margin-top: 24px; border-radius: 14px;
+    padding: 22px; border: 1.5px solid;
+    animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .verdict.danger { background: var(--amber-bg); border-color: #F0C49C; }
+  .verdict.safe { background: var(--sage-bg); border-color: #BFD6C2; }
+  .verdict-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .verdict-icon { width: 28px; height: 28px; flex-shrink: 0; }
+  .verdict-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .verdict.danger .verdict-label { color: #B5631E; }
+  .verdict.safe .verdict-label { color: #3D6B49; }
+  .verdict-headline { font-size: 18px; font-weight: 700; margin: 0 0 6px 0; color: var(--ink); }
+  .verdict-message { font-size: 14px; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .severity-bar { display: flex; gap: 4px; margin-top: 14px; }
+  .severity-seg { height: 4px; flex: 1; border-radius: 2px; background: rgba(0,0,0,0.08); }
+  .severity-seg.filled.danger { background: #D9762A; }
+  .matches-list { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.08); }
+  .match-item {
+    display: flex; justify-content: space-between;
+    align-items: baseline; font-size: 13px; padding: 6px 0; color: var(--ink-soft);
+  }
+  .match-type {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--slate); background: rgba(255,255,255,0.6);
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .scanning {
+    margin-top: 24px; padding: 22px; border-radius: 14px;
+    background: #fff; border: 1.5px solid var(--card-border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .pulse-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--ink); animation: pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.25; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+  .scanning-text { font-size: 14px; color: var(--ink-soft); }
+  .error-banner {
+    margin-top: 24px; padding: 16px; border-radius: 10px;
+    background: #FCEEE0; border: 1.5px solid #F0C49C;
+    font-size: 13px; color: #8A4A14; line-height: 1.5;
+  }
+  .flag-row { margin-top: 18px; text-align: center; }
+  .flag-link {
+    font-size: 13px; color: var(--slate); text-decoration: underline;
+    text-underline-offset: 3px; cursor: pointer;
+    background: none; border: none; font-family: inherit;
+  }
+  .flag-link:hover { color: var(--ink); }
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26, 35, 50, 0.45);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; z-index: 50;
+  }
+  .modal-card {
+    background: #fff; border-radius: 16px;
+    max-width: 440px; width: 100%; max-height: 88vh;
+    overflow-y: auto; padding: 26px;
+    animation: rise 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin: 0 0 4px 0; color: var(--ink); }
+  .modal-sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 18px 0; line-height: 1.5; }
+  .checklist-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--slate); margin: 18px 0 10px 0;
+  }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border: 1.5px solid var(--card-border);
+    border-radius: 10px; margin-bottom: 8px; cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .check-item:hover { border-color: var(--slate); }
+  .check-item.checked { border-color: var(--ink); background: #F5F3EC; }
+  .check-item input { margin-top: 2px; flex-shrink: 0; }
+  .check-item-text { font-size: 14px; color: var(--ink); line-height: 1.4; }
+  .other-input {
+    width: 100%; margin-top: 6px; padding: 10px 12px;
+    border: 1.5px solid var(--card-border); border-radius: 8px;
+    font-size: 14px; font-family: inherit;
+  }
+  .other-input:focus { outline: none; border-color: var(--ink); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .modal-btn {
+    flex: 1; padding: 13px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--card-border); background: #fff; color: var(--ink-soft);
+  }
+  .modal-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .modal-btn.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .submitted-msg { text-align: center; padding: 8px 0 4px 0; }
+  footer { padding: 20px 0 28px 0; border-top: 1px solid var(--card-border); text-align: center; }
+  .footer-text { font-size: 11px; color: var(--slate); letter-spacing: 0.02em; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const API_URL = "http://127.0.0.1:8000";
+
+function WarningIcon() {
+  return (
+    <svg className="verdict-icon" viewBox="0 0 28 28" fill="none">
+      <path d="M14 4L25 23H3L14 4z" stroke="#B5631E" strokeWidth="2" strokeLinejoin="round"/>
+      <line x1="14" y1="11" x2="14" y2="16" stroke="#B5631E" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="14" cy="19.5" r="1.2" fill="#B5631E"/>
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className="verdict-icon" viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="11" stroke="#3D6B49" strokeWidth="2"/>
+      <path d="M9 14.5L12.5 18L19 10.5" stroke="#3D6B49" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function SeverityBar({ severity }) {
+  return (
+    <div className="severity-bar">
+      {[1, 2, 3].map(n => (
+        <div key={n} className={`severity-seg ${n <= severity ? 'filled danger' : ''}`} />
+      ))}
+    </div>
+  );
+}
+
+function FlagModal({ prefillText, onClose }) {
+  const [text, setText] = useState(prefillText || "");
+  const [reasons, setReasons] = useState({
+    reason_impersonation: false,
+    reason_urgency: false,
+    reason_link_mismatch: false,
+    reason_requests_info: false,
+  });
+  const [other, setOther] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const checklistItems = [
+    { key: "reason_impersonation", label: "Pretends to be a real company, bank, or government agency" },
+    { key: "reason_urgency", label: 'Creates urgency or pressure — "act now" or "account suspended"' },
+    { key: "reason_link_mismatch", label: "The link text doesn't match where it actually goes" },
+    { key: "reason_requests_info", label: "Asks for a password, OTP, or other personal information" },
+  ];
+
+  function toggle(key) {
+    setReasons(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  async function handleSubmit() {
+    if (!text.trim()) return;
+    setSubmitting(true);
+    setErr(null);
+    try {
+      const res = await fetch(`${API_URL}/flag`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim(), ...reasons, reason_other: other.trim() || null }),
+      });
+      if (!res.ok) throw new Error();
+      setSubmitted(true);
+    } catch {
+      setErr("Couldn't submit the report. Check that the backend is running.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={e => e.stopPropagation()}>
+        {submitted ? (
+          <div className="submitted-msg">
+            <CheckIcon />
+            <p className="verdict-headline">Report submitted</p>
+            <p className="verdict-message" style={{marginBottom:"20px"}}>
+              Thanks for helping keep others safe. An admin will review this before it's added to the database.
+            </p>
+            <button className="modal-btn primary" onClick={onClose} style={{flex:"none",width:"100%"}}>Done</button>
+          </div>
+        ) : (
+          <React.Fragment>
+            <p className="modal-title">Flag this message</p>
+            <p className="modal-sub">Tell us why it looks suspicious. Your report goes into a review queue — it won't affect other users until an admin approves it.</p>
+            <label className="input-label">Message or link</label>
+            <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Paste the suspicious message or link..." style={{minHeight:"70px"}} />
+            <p className="checklist-label">What makes this suspicious? (select all that apply)</p>
+            {checklistItems.map(item => (
+              <label key={item.key} className={`check-item ${reasons[item.key] ? "checked" : ""}`}>
+                <input type="checkbox" checked={reasons[item.key]} onChange={() => toggle(item.key)} />
+                <span className="check-item-text">{item.label}</span>
+              </label>
+            ))}
+            <p className="checklist-label">Anything else? (optional)</p>
+            <input className="other-input" type="text" value={other} onChange={e => setOther(e.target.value)} placeholder="e.g. asked me to call an unfamiliar number" />
+            {err && <div className="error-banner" style={{marginTop:"14px"}}>{err}</div>}
+            <div className="modal-actions">
+              <button className="modal-btn" onClick={onClose}>Cancel</button>
+              <button className="modal-btn primary" onClick={handleSubmit} disabled={!text.trim() || submitting}>
+                {submitting ? "Submitting…" : "Submit report"}
+              </button>
+            </div>
+          </React.Fragment>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [apiOnline, setApiOnline] = useState(null);
+  const [showFlagModal, setShowFlagModal] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/health`)
+      .then(r => r.ok ? setApiOnline(true) : setApiOnline(false))
+      .catch(() => setApiOnline(false));
+  }, []);
+
+  async function handleScan() {
+    if (!text.trim()) return;
+    setLoading(true); setResult(null); setError(null);
+    try {
+      const res = await fetch(`${API_URL}/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim() }),
+      });
+      if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+      setResult(await res.json());
+    } catch (err) {
+      setError("Couldn't reach the scan service. Make sure the backend is running at " + API_URL + " (uvicorn main:app --reload).");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleScan();
+  }
+
+  return (
+    <div className="app">
+      <header>
+        <p className="eyebrow">
+          <span className={`status-dot ${apiOnline === false ? 'offline' : ''}`} />
+          {apiOnline === false ? "Backend offline" : "Scanner ready"}
+        </p>
+        <h1>ScanLine</h1>
+        <p className="subhead">Paste a suspicious message or link below. We'll check it against known phishing patterns before you click anything.</p>
+      </header>
+      <main>
+        <label className="input-label" htmlFor="scan-input">Message or link to check</label>
+        <textarea id="scan-input" value={text} onChange={e => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="e.g. http://your-bank-secure-login.com or a full message you received..." />
+        <button className="scan-btn" onClick={handleScan} disabled={loading || !text.trim()}>
+          {loading ? "Scanning…" : "Scan message"}
+        </button>
+        {loading && (
+          <div className="scanning">
+            <span className="pulse-dot" />
+            <span className="scanning-text">Checking against the pattern database…</span>
+          </div>
+        )}
+        {error && <div className="error-banner">{error}</div>}
+        {result && !loading && (
+          <div className={`verdict ${result.is_phishing ? "danger" : "safe"}`}>
+            <div className="verdict-top">
+              {result.is_phishing ? <WarningIcon /> : <CheckIcon />}
+              <span className="verdict-label">{result.is_phishing ? "Phishing detected" : "Looks safe"}</span>
+            </div>
+            <p className="verdict-headline">{result.is_phishing ? "This matches a known phishing pattern" : "No known threats found"}</p>
+            <p className="verdict-message">{result.message}</p>
+            {result.is_phishing && result.severity && <SeverityBar severity={result.severity} />}
+            {result.matches && result.matches.length > 0 && (
+              <div className="matches-list">
+                {result.matches.map((m, i) => (
+                  <div className="match-item" key={i}>
+                    <span>{m.description}</span>
+                    <span className="match-type mono">{m.pattern_type}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {result && !loading && (
+          <div className="flag-row">
+            <button className="flag-link" onClick={() => setShowFlagModal(true)}>
+              {result.is_phishing ? "This doesn't look right — let me correct it" : "Actually, I think this is suspicious — flag it"}
+            </button>
+          </div>
+        )}
+      </main>
+      {showFlagModal && <FlagModal prefillText={text} onClose={() => setShowFlagModal(false)} />}
+      <footer>
+        <p className="footer-text mono">ScanLine · Prototype 4 · local build</p>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
