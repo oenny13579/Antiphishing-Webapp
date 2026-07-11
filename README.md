@@ -1,6 +1,10 @@
 **Prompts**
+<br>
 This program is done by vibecoding. 
+<br>
+<br>
 The following is the prompt used:
+<br>
 "I attached my plan of a mobile anti-phishing app. It warns the users if a message is flagged as suspicious. This app leverages on a database that stores messages or formats so that the system can cross check incoming messages with this database. Users of this app can contribute as well to building the database by flagging suspicious messages following a check list. I need you as my assistant and knowledgeable other to build this mobile app system. What do you need so that you can help me build this app?"
 
 **Files**
