@@ -1,6 +1,6 @@
 **Prompts**
 <br>
-This program is done by vibecoding. 
+This program is done by vibecoding. I have been inspired to do this due to advancement of technology and rising scam rates.
 <br>
 <br>
 The following is the prompt used:
